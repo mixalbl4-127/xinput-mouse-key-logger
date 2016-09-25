@@ -1,0 +1,27 @@
+{
+  "name": "xinput-mouse-key-logger",
+  "version": "1.0.0",
+  "description": "Node keyboard and mouse activity detector without root!",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/mixalbl4-127/xinput-mouse-key-logger.git"
+  },
+  "keywords": [
+    "node",
+    "xinput",
+    "without",
+    "root",
+    "keylogger",
+    "mouselogger"
+  ],
+  "author": "mixal_bl4",
+  "license": "GNU",
+  "devDependencies": {
+    "typescript": "^2.0.3",
+    "typings": "^1.4.0"
+  }
+}
