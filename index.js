@@ -1,7 +1,7 @@
 // Match numbers to keys with: xmodmap -pke
 "use strict";
-var exec = require('child_process').exec; // import exec function
-var spawn = require('child_process').spawn; // import spawn function
+var exec = require('child_process').exec; // imports exec function
+var spawn = require('child_process').spawn; // imports spawn function
 // regex tester
 function regexp_exec(pattern, str, flags) {
     if (flags === void 0) { flags = "img"; }
@@ -15,29 +15,29 @@ function regexp_exec(pattern, str, flags) {
     } while (match);
     return results;
 }
-// get list of all xinput devices
+// gets list of all xinput devices
 function xinput_get_all_devices_id(callback) {
-    // get text list
+    // gets text list
     exec('xinput --list', { timeout: 5000 }, function (error, stdout, stderr) {
         if (stdout) {
-            // parse text list
+            // parses text list
             var devices_id_list = regexp_exec('^.*id=(\\d+?)\\t.*slave.*$', stdout);
             var only_id = [];
-            // add founded IDs to array
+            // adding found IDs to array
             for (var _i = 0, devices_id_list_1 = devices_id_list; _i < devices_id_list_1.length; _i++) {
                 var obj = devices_id_list_1[_i];
                 only_id.push(+obj[1]);
             }
-            // check: callback is set
+            // checks if callback is set
             if (callback)
                 callback(only_id);
-            // exit from function if result is good
+            // exits from function if the result is good
             return;
         }
         else if (stderr) {
             console.log('xinput-mouse-key-logger error', stderr);
         }
-        // if error happened - return empty array
+        // return empty array if error has happens
         if (callback)
             callback([]);
     });
@@ -48,34 +48,34 @@ var xinput_listener = (function () {
     function xinput_listener(good_devices_id_list, callback, response_interval) {
         var _this = this;
         if (response_interval === void 0) { response_interval = 3000; }
-        this.destroyed = false; // destroy class status
-        this.streams = []; // created streams array
+        this.destroyed = false; // destroying class status
+        this.streams = []; // already created streams array
         // init class variables
         this.devices = good_devices_id_list;
         this.callback = callback;
         this.response_interval = response_interval;
         this.clear_events();
-        // create all streams
+        // creates all streams
         for (var _i = 0, _a = this.devices; _i < _a.length; _i++) {
             var id = _a[_i];
             this.create_stream(id);
         }
-        // if not live mode it init first timeout
+        // if the live mode is not set, it init first timeout
         if (this.response_interval !== 0) {
             this.send_timeout = setTimeout(function () {
                 _this.check();
             }, this.response_interval);
         }
-        // when node destroyed it destroy all streams
+        // when node is destroyed, it destroys all streams
         process.on('exit', function () {
             _this.destroy();
         });
     }
-    // clear all buffered events
+    // clears all buffered events
     xinput_listener.prototype.clear_events = function () {
         this.events = xinput_listener.get_clear_events();
     };
-    // return clear events object
+    // return clear object of events
     xinput_listener.get_clear_events = function () {
         return {
             total_mouse_button_events: 0,
@@ -85,63 +85,63 @@ var xinput_listener = (function () {
             mouse_button_codes: []
         };
     };
-    // create new stream
+    // creates new stream
     xinput_listener.prototype.create_stream = function (id) {
         var _this = this;
-        // run stream with device id
+        // runs stream with device id
         var stream = spawn('xinput', ['--test', String(id)]);
-        // set event listener on data
+        // sets event listener on data
         stream.stdout.on('data', function (data) {
-            data = String(data); // convert bits to string
-            var keys = regexp_exec("^key press\\s+(\\d+?)\\s{0,}$", data); // searching keyboard press events
-            var mouse_keys = regexp_exec("^button press\\s+(\\d+?)\\s{0,}$", data); // searching mouse press events
-            var mouse_moves = regexp_exec("^motion\\s{1}.*$", data); // searching mouse move events
-            // if live mode enabled
+            data = String(data); // converts bits to string
+            var keys = regexp_exec("^key press\\s+(\\d+?)\\s{0,}$", data); // searches keyboard press events
+            var mouse_keys = regexp_exec("^button press\\s+(\\d+?)\\s{0,}$", data); // searches mouse press events
+            var mouse_moves = regexp_exec("^motion\\s{1}.*$", data); // searches mouse move events
+            // if live mode is enabled
             if (_this.response_interval === 0) {
-                var new_events_list = xinput_listener.get_clear_events(); // create clear events list
-                // add keys events
+                var new_events_list = xinput_listener.get_clear_events(); // create clear list of events
+                // add events of keyboard keys
                 for (var _i = 0, keys_1 = keys; _i < keys_1.length; _i++) {
                     var key = keys_1[_i];
                     new_events_list.keys_code.push(+key[1]);
                     new_events_list.total_keyboard_events++;
                 }
-                // add mouse_keys events
+                // adds events of mouse keys
                 for (var _a = 0, mouse_keys_1 = mouse_keys; _a < mouse_keys_1.length; _a++) {
                     var mouse_key = mouse_keys_1[_a];
                     new_events_list.mouse_button_codes.push(+mouse_key[1]);
                     new_events_list.total_mouse_button_events++;
                 }
-                // add mouse moves events counter
+                // adds events of mouse keys
                 new_events_list.total_mouse_move_events += mouse_moves.length;
-                // if it got new events run callback
+                // if new events are got, run callback
                 if ((keys.length > 0 || mouse_keys.length > 0 || mouse_moves.length > 0) && _this.callback)
                     _this.callback(new_events_list);
             }
             else {
-                // add keys events
+                // adds events of keys
                 for (var _b = 0, keys_2 = keys; _b < keys_2.length; _b++) {
                     var key = keys_2[_b];
                     _this.events.keys_code.push(+key[1]);
                     _this.events.total_keyboard_events++;
                 }
-                // add mouse_keys events
+                // adds events of mouse_keys
                 for (var _c = 0, mouse_keys_2 = mouse_keys; _c < mouse_keys_2.length; _c++) {
                     var mouse_key = mouse_keys_2[_c];
                     _this.events.mouse_button_codes.push(+mouse_key[1]);
                     _this.events.total_mouse_button_events++;
                 }
-                // add mouse moves events counter
+                // adds counter of mouse move events
                 _this.events.total_mouse_move_events += mouse_moves.length;
             }
         });
-        // set event listener on ERROR data
+        // sets event listener on ERROR data
         // stream.stderr.on('data', (data: string) => {
         //     console.log(`stderr: ${data}`);
         // });
-        // push this stream to streams list
+        // pushed this stream to the list of streams
         this.streams.push(stream);
     };
-    // send events to callback
+    // sends events to callback
     xinput_listener.prototype.check = function () {
         var _this = this;
         if (!this.destroyed) {
@@ -153,9 +153,9 @@ var xinput_listener = (function () {
         }
         this.clear_events();
     };
-    // destroy all streams and this class
+    // destroys all streams and this class
     xinput_listener.prototype.destroy = function () {
-        // trying kill streams
+        // trying to kill streams
         for (var _i = 0, _a = this.streams; _i < _a.length; _i++) {
             var stream = _a[_i];
             try {
@@ -163,14 +163,14 @@ var xinput_listener = (function () {
             }
             catch (e) { }
         }
-        // trying clear timeout
+        // trying to clear timeout
         try {
             clearTimeout(this.send_timeout);
         }
         catch (e) { }
-        // set new status
+        // sets new status
         this.destroyed = true;
-        // clear events array
+        // clears array of events
         this.clear_events();
     };
     return xinput_listener;

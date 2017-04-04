@@ -1,9 +1,9 @@
 // Match numbers to keys with: xmodmap -pke
 
 // Main import
-import {ChildProcess} from "child_process"; // import ChildProcess type
-const exec = require('child_process').exec; // import exec function
-const spawn = require('child_process').spawn; // import spawn function
+import {ChildProcess} from "child_process"; // imports ChildProcess type
+const exec = require('child_process').exec; // imports exec function
+const spawn = require('child_process').spawn; // imports spawn function
 
 // regex tester
 function regexp_exec(pattern: string, str: string, flags: string = "img"): string[] {
@@ -18,26 +18,26 @@ function regexp_exec(pattern: string, str: string, flags: string = "img"): strin
     return results;
 }
 
-// get list of all xinput devices
+// gets list of all xinput devices
 export function xinput_get_all_devices_id(callback: (devices_id_list: number[])=>any) {
-    // get text list
+    // gets text list
     exec('xinput --list', {timeout: 5000}, function (error: any, stdout: string, stderr: string) {
         if (stdout) {
-            // parse text list
+            // parses text list
             var devices_id_list: string[] = regexp_exec('^.*id=(\\d+?)\\t.*slave.*$', stdout);
             var only_id: number[] = [];
-            // add founded IDs to array
+            // adding found IDs to array
             for (var obj of devices_id_list)
                 only_id.push(+obj[1]);
-            // check: callback is set
+            // checks if callback is set
             if (callback)
                 callback(only_id);
-            // exit from function if result is good
+            // exits from function if the result is good
             return;
         } else if (stderr) {
             console.log('xinput-mouse-key-logger error', stderr);
         }
-        // if error happened - return empty array
+        // return empty array if error has happens
         if (callback)
             callback([]);
     });
@@ -56,11 +56,11 @@ export interface xinput_events_list {
 export class xinput_listener {
     private devices: number[]; // devices id
     private callback: (xinput_events_list: xinput_events_list)=>any; // callback
-    private response_interval: number; // callback run interval, if set 0 == live mode!
-    private events: xinput_events_list; // event list buffer
-    private destroyed: boolean = false; // destroy class status
+    private response_interval: number; // if set 0 == live mode, callback run interval!
+    private events: xinput_events_list; // list of events buffer
+    private destroyed: boolean = false; // destroying class status
     private send_timeout: NodeJS.Timer; // variable for interval
-    private streams: ChildProcess[] = []; // created streams array
+    private streams: ChildProcess[] = []; // already created streams array
 
     constructor(good_devices_id_list: number[], callback: (xinput_events_list: xinput_events_list)=>any, response_interval: number = 3000) {
         // init class variables
@@ -69,30 +69,30 @@ export class xinput_listener {
         this.response_interval = response_interval;
         this.clear_events();
 
-        // create all streams
+        // creates all streams
         for (var id of this.devices) {
             this.create_stream(id);
         }
 
-        // if not live mode it init first timeout
+        // if the live mode is not set, it init first timeout
         if (this.response_interval !== 0) {
             this.send_timeout = setTimeout(()=> {
                 this.check()
             }, this.response_interval);
         }
 
-        // when node destroyed it destroy all streams
+        // when node is destroyed, it destroys all streams
         process.on('exit', ()=> {
             this.destroy();
         });
     }
 
-    // clear all buffered events
+    // clears all buffered events
     public clear_events() {
         this.events = xinput_listener.get_clear_events();
     }
 
-    // return clear events object
+    // return clear object of events
     static get_clear_events(): xinput_events_list {
         return <xinput_events_list>{
             total_mouse_button_events: 0,
@@ -103,62 +103,62 @@ export class xinput_listener {
         };
     }
 
-    // create new stream
+    // creates new stream
     private create_stream(id: number) {
-        // run stream with device id
+        // runs stream with device id
         var stream: ChildProcess = spawn('xinput', ['--test', String(id)]);
 
-        // set event listener on data
+        // sets event listener on data
         stream.stdout.on('data', (data: string) => {
-            data = String(data); // convert bits to string
-            var keys: string[] = regexp_exec("^key press\\s+(\\d+?)\\s{0,}$", data); // searching keyboard press events
-            var mouse_keys: string[] = regexp_exec("^button press\\s+(\\d+?)\\s{0,}$", data); // searching mouse press events
-            var mouse_moves: string[] = regexp_exec("^motion\\s{1}.*$", data); // searching mouse move events
+            data = String(data); // converts bits to string
+            var keys: string[] = regexp_exec("^key press\\s+(\\d+?)\\s{0,}$", data); // searches keyboard press events
+            var mouse_keys: string[] = regexp_exec("^button press\\s+(\\d+?)\\s{0,}$", data); // searches mouse press events
+            var mouse_moves: string[] = regexp_exec("^motion\\s{1}.*$", data); // searches mouse move events
 
-            // if live mode enabled
+            // if live mode is enabled
             if (this.response_interval === 0) {
-                var new_events_list = xinput_listener.get_clear_events(); // create clear events list
-                // add keys events
+                var new_events_list = xinput_listener.get_clear_events(); // create clear list of events
+                // add events of keyboard keys
                 for (var key of keys) {
                     new_events_list.keys_code.push(+key[1]);
                     new_events_list.total_keyboard_events++;
                 }
-                // add mouse_keys events
+                // adds events of mouse keys
                 for (var mouse_key of mouse_keys) {
                     new_events_list.mouse_button_codes.push(+mouse_key[1]);
                     new_events_list.total_mouse_button_events++;
                 }
-                // add mouse moves events counter
+                // adds events of mouse keys
                 new_events_list.total_mouse_move_events += mouse_moves.length;
-                // if it got new events run callback
+                // if new events are got, run callback
                 if ((keys.length > 0 || mouse_keys.length > 0 || mouse_moves.length > 0) && this.callback)
                     this.callback(new_events_list);
             } else {
-                // add keys events
+                // adds events of keys
                 for (var key of keys) {
                     this.events.keys_code.push(+key[1]);
                     this.events.total_keyboard_events++;
                 }
-                // add mouse_keys events
+                // adds events of mouse_keys
                 for (var mouse_key of mouse_keys) {
                     this.events.mouse_button_codes.push(+mouse_key[1]);
                     this.events.total_mouse_button_events++;
                 }
-                // add mouse moves events counter
+                // adds counter of mouse move events
                 this.events.total_mouse_move_events += mouse_moves.length;
             }
         });
 
-        // set event listener on ERROR data
+        // sets event listener on ERROR data
         // stream.stderr.on('data', (data: string) => {
         //     console.log(`stderr: ${data}`);
         // });
 
-        // push this stream to streams list
+        // pushed this stream to the list of streams
         this.streams.push(stream);
     }
 
-    // send events to callback
+    // sends events to callback
     private check() {
         if (!this.destroyed) {
             if (this.callback)
@@ -170,21 +170,21 @@ export class xinput_listener {
         this.clear_events();
     }
 
-    // destroy all streams and this class
+    // destroys all streams and this class
     public destroy() {
-        // trying kill streams
+        // trying to kill streams
         for (var stream of this.streams) {
             try {
                 stream.kill();
             } catch (e) {}
         }
-        // trying clear timeout
+        // trying to clear timeout
         try {
             clearTimeout(this.send_timeout);
         } catch (e) {}
-        // set new status
+        // sets new status
         this.destroyed = true;
-        // clear events array
+        // clears array of events
         this.clear_events();
     }
 }
