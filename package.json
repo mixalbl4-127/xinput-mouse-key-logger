@@ -1,6 +1,6 @@
 {
   "name": "xinput-mouse-key-logger",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Node keyboard and mouse activity detector without root!",
   "main": "index.js",
   "scripts": {
